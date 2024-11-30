@@ -1,0 +1,13 @@
+[package]
+name = "remapper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+atools = "0.1.5"
+exoquant = "0.2.0"
+fimg = { version = "0.4.43", path = "../fimg", default-features = false, features = [
+    "save",
+] }
+fux_kdtree = "0.2.0"
+rand = "0.8.5"
