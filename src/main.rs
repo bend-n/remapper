@@ -5,7 +5,7 @@ use rand::{Rng, RngCore};
 
 fn main() {
     reemap();
-    // eomap();
+    eomap();
     // let mut rng = rand::thread_rng();
     // let pal = std::iter::repeat_with(|| {
     //     let a: [f32; 3] = std::array::from_fn(|_| rng.next_u64() as f32 / u64::MAX as f32);
@@ -25,6 +25,13 @@ fn reemap() {
     // .collect::<Vec<_>>();
     let pal = fimg::Image::<Box<[f32]>, 4>::from(fimg::Image::open("../endesga.png").as_ref());
     let pal = pal.flatten();
+    // let pal = [
+    //     [0., 0., 0., 1.],
+    //     [0.25, 0.25, 0.25, 1.],
+    //     [0.5, 0.5, 0.5, 1.],
+    //     [0.75, 0.75, 0.75, 1.],
+    //     [1.; 4],
+    // ];
 
     /*let pal = [
         ]
@@ -34,9 +41,9 @@ fn reemap() {
     // println!("{pal:?}");
 
     fimg::Image::<Box<[u8]>, 4>::from(
-        remapper::remap(
+        remapper::remap_bayer_8x8(
             fimg::Image::<Box<[f32]>, 4>::from(
-                fimg::Image::<Vec<u8>, 4>::open("plane_4096_2048.png").as_ref(),
+                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png").as_ref(),
             )
             .as_ref(),
             &pal,
@@ -47,7 +54,7 @@ fn reemap() {
 }
 
 fn eomap() {
-    let x = fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png");
+    let x = fimg::Image::<Vec<u8>, 4>::open("../drawing-1.png");
     let pal = fimg::Image::open("../endesga.png");
     let pal = pal.flatten();
     let res = exoquant::Remapper::new(

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 atools = "0.1.5"
+car = "0.1.1"
 exoquant = "0.2.0"
 fimg = { version = "0.4.43", path = "../fimg", default-features = false, features = [
     "save",

@@ -1,12 +1,27 @@
-/// A data structure for fast nearest color lookups in a palette.
 use atools::prelude::*;
 
 pub struct KD {
-    mid_point: [f32; 4],
-    index: u32,
+    median: [f32; 4],
     normal: [f32; 4],
+    index: u32,
     left: Option<Box<KD>>,
     right: Option<Box<KD>>,
+    depth: u32,
+}
+
+impl std::fmt::Debug for KD {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "#{} {:?}", self.index, self.median)?;
+        let d = self.depth as usize;
+        if let Some(ref left) = self.left {
+            write!(f, "\n{}  ⬅️  {left:?}", " ".repeat(d))?;
+        }
+        if let Some(ref right) = self.right {
+            write!(f, "\n{}  ➡️  {right:?}", " ".repeat(d))?;
+        }
+
+        Ok(())
+    }
 }
 
 struct KDNearest {
@@ -27,60 +42,96 @@ impl Dot for [f32; 4] {
 impl KD {
     pub fn new(colors: &[[f32; 4]]) -> Self {
         assert!(colors.len() < u32::MAX as usize);
-        let mut x = (0..colors.len() as u32).collect::<Vec<_>>();
-
-        Self::_new(&mut x, colors)
+        let colors = colors.iter().copied().zip(0u32..).collect::<Vec<_>>();
+        Self::_new(&mut { colors }, 0).unwrap()
     }
 
-    fn _new(mut indices: &mut [u32], colors: &[[f32; 4]]) -> KD {
-        assert!(indices.len() > 0);
+    fn _new(colors: &mut [([f32; 4], u32)], depth: u32) -> Option<KD> {
+        if colors.len() == 0 {
+            return None;
+        };
 
-        let middle = indices.len() / 2;
+        let middle = colors.len() / 2;
 
         let mut sum = [0.; 4];
         let mut sum2 = [0.; 4];
-        for i in indices.iter() {
-            let c = colors[*i as usize];
+        for &(c, _) in colors.iter() {
             sum = sum.aadd(c);
             sum2 = sum2.aadd(c.amul(c));
         }
-        let [r, g, b, a] = { sum2.asub(sum.amul(sum).mul(1.0 / indices.len() as f32)) };
-        let normal = if r > g && r > b && r > a {
-            (1.0).join([0.; 3])
-        } else if g > b && g > a {
-            [0.0, 1.0].couple([0.; 2])
-        } else if b > a {
-            [0.; 2].couple([1., 0.])
-        } else {
-            [0.; 3].join(1.)
-        };
-        indices.sort_by(|a, b| {
-            colors[*a as usize]
-                .dot(normal)
-                .partial_cmp(&colors[*b as usize].dot(normal))
-                .unwrap()
+        let [r, g, b, a] = { sum2.asub(sum.amul(sum).mul(1.0 / colors.len() as f32)) };
+
+        let normal = [
+            (r > g && r > b && r > a) as u8 as f32,
+            (g > b && g > a) as u8 as f32,
+            (b > a) as u8 as f32,
+            1.,
+        ];
+        // colors.sort_by(|(a, _), (b, _)| );
+        let (before, median, after) = colors.select_nth_unstable_by(middle, |(a, _), (b, _)| {
+            a.dot(normal).partial_cmp(&b.dot(normal)).unwrap()
         });
-        let i = indices.len() / 2;
-        let left = if i > 0 {
-            Some(Box::new(KD::_new(&mut indices[0..i], colors)))
-        } else {
-            None
-        };
-        let right = if i + 1 < indices.len() {
-            Some(Box::new(KD::_new(&mut indices[(i + 1)..], colors)))
-        } else {
-            None
-        };
-        KD {
-            mid_point: colors[indices[i as usize] as usize],
-            index: indices[i as usize],
-            normal: normal,
-            left: left,
-            right: right,
-        }
+        Some(KD {
+            median: median.0,
+            index: median.1,
+            left: KD::_new(before, depth + 1).map(Box::new),
+            right: KD::_new(after, depth + 1).map(Box::new),
+            normal,
+            depth,
+        })
     }
 
-    fn _find_nearest(
+    fn _find_nearest(&self, needle: [f32; 4], mut limit: f32) -> Option<KDNearest> {
+        let mut result = None;
+
+        let diff = needle.asub(self.median);
+        let distance = diff.dot(diff).sqrt();
+
+        if distance < limit {
+            limit = distance;
+            result = Some(KDNearest {
+                index: self.index,
+                distance,
+            })
+        }
+
+        let dot = diff.dot(self.normal);
+        if dot <= 0.0 {
+            if let Some(ref left) = self.left
+                && let Some(nearest) = left._find_nearest(needle, limit)
+            {
+                limit = nearest.distance;
+                result = Some(nearest);
+            }
+
+            if -dot < limit {
+                if let Some(ref right) = self.right
+                    && let Some(nearest) = right._find_nearest(needle, limit)
+                {
+                    result = Some(nearest);
+                }
+            }
+        } else {
+            if let Some(ref right) = self.right
+                && let Some(nearest) = right._find_nearest(needle, limit)
+            {
+                limit = nearest.distance;
+                result = Some(nearest);
+            }
+
+            if dot < limit {
+                if let Some(ref left) = self.left
+                    && let Some(nearest) = left._find_nearest(needle, limit)
+                {
+                    result = Some(nearest);
+                }
+            }
+        }
+
+        result
+    }
+
+    fn _find_nearest_excepting(
         &self,
         needle: [f32; 4],
         mut limit: f32,
@@ -88,46 +139,47 @@ impl KD {
     ) -> Option<KDNearest> {
         let mut result = None;
 
-        let diff = needle.asub(self.mid_point);
+        let diff = needle.asub(self.median);
         let distance = diff.dot(diff).sqrt();
 
         if distance < limit && self.index != ignore_index {
             limit = distance;
             result = Some(KDNearest {
                 index: self.index,
-                distance: distance,
+                distance,
             })
         }
 
         let dot = diff.dot(self.normal);
         if dot <= 0.0 {
-            if let Some(ref left) = self.left {
-                if let Some(nearest) = left._find_nearest(needle, limit, ignore_index) {
-                    limit = nearest.distance;
-                    result = Some(nearest);
-                }
+            if let Some(ref left) = self.left
+                && let Some(nearest) = left._find_nearest_excepting(needle, limit, ignore_index)
+            {
+                limit = nearest.distance;
+                result = Some(nearest);
             }
 
             if -dot < limit {
-                if let Some(ref right) = self.right {
-                    if let Some(nearest) = right._find_nearest(needle, limit, ignore_index) {
-                        result = Some(nearest);
-                    }
-                }
-            }
-        } else {
-            if let Some(ref right) = self.right {
-                if let Some(nearest) = right._find_nearest(needle, limit, ignore_index) {
-                    limit = nearest.distance;
+                if let Some(ref right) = self.right
+                    && let Some(nearest) =
+                        right._find_nearest_excepting(needle, limit, ignore_index)
+                {
                     result = Some(nearest);
                 }
             }
+        } else {
+            if let Some(ref right) = self.right
+                && let Some(nearest) = right._find_nearest_excepting(needle, limit, ignore_index)
+            {
+                limit = nearest.distance;
+                result = Some(nearest);
+            }
 
             if dot < limit {
-                if let Some(ref left) = self.left {
-                    if let Some(nearest) = left._find_nearest(needle, limit, ignore_index) {
-                        result = Some(nearest);
-                    }
+                if let Some(ref left) = self.left
+                    && let Some(nearest) = left._find_nearest_excepting(needle, limit, ignore_index)
+                {
+                    result = Some(nearest);
                 }
             }
         }
@@ -136,13 +188,32 @@ impl KD {
     }
 
     pub fn find_nearest(&self, color: [f32; 4]) -> u32 {
-        self._find_nearest(color, f32::MAX, u32::MAX)
+        self._find_nearest(color, f32::MAX)
             .map(|x| x.index)
             .unwrap_or(0)
     }
+
+    pub fn space(&self, colors: &[[f32; 4]]) -> f32 {
+        let mut i = colors
+            .iter()
+            .zip(0..)
+            .map(|(c, i)| {
+                self._find_nearest_excepting(*c, f32::MAX, i)
+                    .unwrap()
+                    .distance
+            })
+            .array_chunks::<256>();
+
+        let (c, sum) = i.by_ref().fold((0.0, 0.0), |(c, sum), chunk| {
+            let y = sum_block(chunk) - c;
+            let t = sum + y;
+            ((t - sum) - y, t)
+        });
+        (sum + (i.into_remainder().map(sum_block).unwrap_or(0.) - c)) / colors.len() as f32
+    }
 }
 
-fn occludes(origin: [f32; 4], occluder: [f32; 4], target: [f32; 4]) -> bool {
-    let dir = occluder.asub(origin);
-    dir.dot(dir) * 0.5 <= (target.asub(origin)).dot(dir)
+use std::intrinsics::fadd_algebraic;
+fn sum_block(arr: impl IntoIterator<Item = f32>) -> f32 {
+    arr.into_iter().fold(0.0, |x, y| fadd_algebraic(x, y))
 }
