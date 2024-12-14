@@ -1,7 +1,6 @@
 #![feature(slice_as_chunks, generic_const_exprs)]
 use atools::prelude::*;
 use exoquant::SimpleColorSpace;
-use rand::{Rng, RngCore};
 
 fn main() {
     reemap();
@@ -41,9 +40,13 @@ fn reemap() {
     // println!("{pal:?}");
 
     fimg::Image::<Box<[u8]>, 4>::from(
-        remapper::remap_bayer_8x8(
+        remapper::remap_triangular(
             fimg::Image::<Box<[f32]>, 4>::from(
-                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png").as_ref(),
+                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
+                    // .show()
+                    // .scale::<fimg::scale::Nearest>(800, 480)
+                    // .show()
+                    .as_ref(),
             )
             .as_ref(),
             &pal,
@@ -54,7 +57,7 @@ fn reemap() {
 }
 
 fn eomap() {
-    let x = fimg::Image::<Vec<u8>, 4>::open("../drawing-1.png");
+    let x = fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png");
     let pal = fimg::Image::open("../endesga.png");
     let pal = pal.flatten();
     let res = exoquant::Remapper::new(
@@ -62,7 +65,7 @@ fn eomap() {
             .map(|&[r, g, b, a]| exoquant::Color::new(r, g, b, a))
             .collect::<Vec<_>>(),
         &SimpleColorSpace::default(),
-        &exoquant::ditherer::Ordered,
+        &exoquant::ditherer::FloydSteinberg::new(),
     )
     .remap(
         &x.chunked()

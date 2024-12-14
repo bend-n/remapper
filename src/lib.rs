@@ -1,4 +1,5 @@
 #![feature(
+    const_option,
     adt_const_params,
     iter_array_chunks,
     let_chains,
@@ -16,7 +17,6 @@ mod dumb;
 mod kd;
 use atools::prelude::*;
 use dumb::Closest;
-use exoquant::Remapper;
 use fimg::Image;
 use kd::KD;
 // type KD = kiddo::immutable::float::kdtree::ImmutableKdTree<f32, u64, 4, 32>;
@@ -62,16 +62,111 @@ fn dither(
         image
             .rows()
             .enumerate()
-            .flat_map(|(x, p)| p.iter().enumerate().map(move |(y, p)| ((x % 2, y % 2), p)))
+            .flat_map(|(x, p)| p.iter().enumerate().map(move |(y, p)| ((x, y), p)))
             .flat_map(f)
             .collect(),
     )
 }
 
+fn dither_with<const N: usize>(
+    image: Image<&[f32], 4>,
+    mut f: impl FnMut(((usize, usize), &[f32; 4])) -> [f32; 4],
+) -> Image<Box<[f32]>, 4> {
+    dither(image, |((x, y), p)| f(((x % N, y % N), p)))
+}
+
+pub fn remap_triangular(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
+    let kd = map(palette);
+    const BLUE: Image<[f32; 1024 * 1024 * 3], 3> = unsafe {
+        Image::new(
+            std::num::NonZero::new(1024).unwrap(),
+            std::num::NonZero::new(1024).unwrap(),
+            std::mem::transmute(*include_bytes!("../blue.f32")),
+        )
+    };
+    dither(image, |((x, y), p)| {
+        let (p, al) = p.pop();
+        let noise = unsafe { BLUE.pixel(x as u32 % 1024, y as u32 % 1024) };
+        let c = p
+            .zip(noise)
+            .map(|(x, noise)| {
+                let noise = if x < (0.5 / 255.) || x > (254.5 / 255.) {
+                    noise - 0.5
+                } else {
+                    if noise < 0.5 {
+                        (2.0 * (noise)).sqrt() - 1.0
+                    } else {
+                        1.0 - (2.0 - 2.0 * noise).sqrt()
+                    }
+                };
+                x + noise - 0.2
+            })
+            .join(al);
+        palette[kd.find_nearest(c) as usize]
+    })
+}
+
+pub fn remap_floyd_steinberg<const FAC: u8>(
+    image: Image<&[f32], 4>,
+    palette: &[[f32; 4]],
+) -> Image<Box<[f32]>, 4> {
+    let kd = map(palette);
+    let mut image =
+        Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
+    let w = image.width();
+    let h = image.height();
+    let fac = FAC as f32 * (1.0 / 255.0);
+    let 七 = 7. / 16. * fac;
+    let 三 = 3. / 16. * fac;
+    let 五 = 5. / 16. * fac;
+    let 一 = 1. / 16. * fac;
+    for (x, y) in (0..h).flat_map(move |y| (0..w).map(move |x| (x, y))) {
+        unsafe {
+            let p = image.pixel(x, y);
+            let new = palette[kd.find_nearest(p) as usize];
+            *image.pixel_mut(x, y) = new;
+            let error = p.asub(new);
+            let f = |f| move |x: [f32; 4]| x.aadd(error.amul([f; 4]));
+            image.replace(x + 1, y, f(七));
+            image.replace(x.wrapping_sub(1), y + 1, f(三));
+            image.replace(x, y + 1, f(五));
+            image.replace(x + 1, y + 1, f(一));
+        }
+    }
+    image
+}
+
+pub fn remap_atkinson(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
+    let kd = map(palette);
+    let mut image =
+        Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
+    let w = image.width();
+    let h = image.height();
+    let eighth = [1. / 8.; 4];
+    for (x, y) in (0..h).flat_map(move |y| (0..w).map(move |x| (x, y))) {
+        unsafe {
+            let p = image.pixel(x, y);
+            let new = palette[kd.find_nearest(p) as usize];
+            *image.pixel_mut(x, y) = new;
+            let error = p.asub(new);
+            let f = |x: [f32; 4]| x.aadd(error.amul(eighth));
+            image.replace(x + 1, y, f);
+            image.replace(x + 2, y, f);
+
+            image.replace(x.wrapping_sub(1), y + 1, f);
+            image.replace(x, y + 1, f);
+            image.replace(x + 1, y + 1, f);
+
+            image.replace(x, y + 2, f);
+        }
+    }
+    image
+}
+
 pub fn remap_bayer_2x2(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
     let kd = map(palette);
     let r = kd.space(palette);
-    dither(image, |((x, y), &p)| {
+    dither_with::<2>(image, |((x, y), &p)| {
         let color = p.add(r * BAYER_2X2[x + y * 2]);
         palette[kd.find_nearest(color) as usize]
     })
@@ -80,7 +175,7 @@ pub fn remap_bayer_2x2(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<B
 pub fn remap_bayer_4x4(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
     let kd = map(palette);
     let r = kd.space(palette);
-    dither(image, |((x, y), &p)| {
+    dither_with::<4>(image, |((x, y), &p)| {
         let color = p.add(r * BAYER_4X4[x + y * 4]);
         palette[kd.find_nearest(color) as usize]
     })
@@ -89,7 +184,7 @@ pub fn remap_bayer_4x4(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<B
 pub fn remap_bayer_8x8(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
     let kd = map(palette);
     let r = kd.space(palette);
-    dither(image, |((x, y), &p)| {
+    dither_with::<8>(image, |((x, y), &p)| {
         let color = p.add(r * BAYER_8X8[x + y * 8]);
         palette[kd.find_nearest(color) as usize]
     })
