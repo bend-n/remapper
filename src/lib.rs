@@ -16,7 +16,6 @@
 mod dumb;
 mod kd;
 use atools::prelude::*;
-use dumb::Closest;
 use fimg::Image;
 use kd::KD;
 // type KD = kiddo::immutable::float::kdtree::ImmutableKdTree<f32, u64, 4, 32>;
@@ -74,16 +73,27 @@ fn dither_with<const N: usize>(
 ) -> Image<Box<[f32]>, 4> {
     dither(image, |((x, y), p)| f(((x % N, y % N), p)))
 }
+const BLUE: Image<[f32; 1024 * 1024 * 3], 3> = unsafe {
+    Image::new(
+        std::num::NonZero::new(1024).unwrap(),
+        std::num::NonZero::new(1024).unwrap(),
+        std::mem::transmute(*include_bytes!("../blue.f32")),
+    )
+};
+// todo: figure this out? seems off.
+pub fn remap_blue(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
+    let kd = map(palette);
+    // Image::<Box<[u8]>, 3>::from(BLUE.as_ref()).show();
+    dither(image, |((x, y), p)| {
+        let (p, al) = p.pop();
+        let noise = unsafe { BLUE.pixel(x as u32 % 1024, y as u32 % 1024) }.sub(0.5);
+        let c = p.zip(noise).map(|(x, noise)| x + noise).join(al);
+        palette[kd.find_nearest(c) as usize]
+    })
+}
 
 pub fn remap_triangular(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
     let kd = map(palette);
-    const BLUE: Image<[f32; 1024 * 1024 * 3], 3> = unsafe {
-        Image::new(
-            std::num::NonZero::new(1024).unwrap(),
-            std::num::NonZero::new(1024).unwrap(),
-            std::mem::transmute(*include_bytes!("../blue.f32")),
-        )
-    };
     dither(image, |((x, y), p)| {
         let (p, al) = p.pop();
         let noise = unsafe { BLUE.pixel(x as u32 % 1024, y as u32 % 1024) };
@@ -94,12 +104,12 @@ pub fn remap_triangular(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<
                     noise - 0.5
                 } else {
                     if noise < 0.5 {
-                        (2.0 * (noise)).sqrt() - 1.0
+                        (2.0 * noise).sqrt() - 1.0
                     } else {
                         1.0 - (2.0 - 2.0 * noise).sqrt()
                     }
                 };
-                x + noise - 0.2
+                x + noise
             })
             .join(al);
         palette[kd.find_nearest(c) as usize]
