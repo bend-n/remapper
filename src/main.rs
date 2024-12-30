@@ -4,7 +4,7 @@ use exoquant::SimpleColorSpace;
 
 fn main() {
     reemap();
-    eomap();
+    // eomap();
     // let mut rng = rand::thread_rng();
     // let pal = std::iter::repeat_with(|| {
     //     let a: [f32; 3] = std::array::from_fn(|_| rng.next_u64() as f32 / u64::MAX as f32);
@@ -25,11 +25,11 @@ fn reemap() {
     let pal = fimg::Image::<Box<[f32]>, 4>::from(fimg::Image::open("../endesga.png").as_ref());
     let pal = pal.flatten();
     // let pal = [
-    //     [0., 0., 0., 1.],
-    //     [0.25, 0.25, 0.25, 1.],
-    //     [0.5, 0.5, 0.5, 1.],
-    //     [0.75, 0.75, 0.75, 1.],
-    //     [1.; 4],
+    // [0., 0., 0., 1.],
+    // [0.25, 0.25, 0.25, 1.],
+    // [0.5, 0.5, 0.5, 1.],
+    // [0.75, 0.75, 0.75, 1.],
+    // [1.; 4],
     // ];
 
     /*let pal = [
@@ -40,13 +40,14 @@ fn reemap() {
     // println!("{pal:?}");
 
     fimg::Image::<Box<[u8]>, 4>::from(
-        remapper::remap_triangular(
+        remapper::diffusion::riemerasma(
             fimg::Image::<Box<[f32]>, 4>::from(
-                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
-                    // .show()
-                    // .scale::<fimg::scale::Nearest>(800, 480)
-                    // .show()
-                    .as_ref(),
+                fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
+                // fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
+                // .show()
+                // .scale::<fimg::scale::Nearest>(800, 480)
+                // .show()
+                // .as_ref(),
             )
             .as_ref(),
             &pal,
