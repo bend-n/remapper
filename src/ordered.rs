@@ -1,6 +1,43 @@
 //! # Ordered dithering.
 //! The way this works is by adding a constant texture to the image, and then quantizing that.
 use super::*;
+
+const fn threshold<const N: usize>(x: [u32; N]) -> [f32; N] {
+    car::map!(x, |x| x as f32 * (1. / N as f32)
+        - 0.5 * ((N - 1) as f32 * (1. / N as f32)))
+}
+
+static BAYER_2X2: [f32; 4] = {
+    threshold([
+        0, 2, //
+        3, 1,
+    ])
+};
+static BAYER_4X4: [f32; 4 * 4] = {
+    threshold([
+        0, 8, 2, 10, //
+        12, 4, 14, 6, //
+        3, 11, 1, 9, //
+        15, 7, 13, 5,
+    ])
+};
+
+pub const BAYER_8X8: [f32; 8 * 8] = threshold(mattr::transposed::<_, 8, 8>(car::from_fn!(|p| {
+    let q = p ^ (p >> 3);
+    // https://bisqwit.iki.fi/story/howto/dither/jy/
+    #[rustfmt::skip]
+    (((p & 4) >> 2) | ((q & 4) >> 1)
+        | ((p & 2) << 1) | ((q & 2) << 2)
+        | ((p & 1) << 4) | ((q & 1) << 5)) as u32
+})));
+
+fn dither_with<const N: usize>(
+    image: Image<&[f32], 4>,
+    mut f: impl FnMut(((usize, usize), &[f32; 4])) -> [f32; 4],
+) -> Image<Box<[f32]>, 4> {
+    dither(image, |((x, y), p)| f(((x % N, y % N), p)))
+}
+
 pub fn remap_bayer_2x2(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
     let kd = map(palette);
     let r = kd.space(palette);

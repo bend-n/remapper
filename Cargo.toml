@@ -12,6 +12,7 @@ fimg = { version = "0.4.43", git = "https://github.com/bend-n/fimg", default-fea
     "scale",
 ] }
 fux_kdtree = "0.2.0"
+mattr = "0.0.3"
 rand = "0.8.5"
 
 

@@ -1,6 +1,4 @@
 //! https://www.compuphase.com/riemer.htm
-use std::{collections::VecDeque, mem::MaybeUninit};
-
 use super::*;
 
 #[test]

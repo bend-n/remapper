@@ -7,9 +7,7 @@ pub fn sierra<const FAC: u8>(
     let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    let w = image.width();
-    let h = image.height();
-    for (x, y) in (0..h).flat_map(move |y| (0..w).map(move |x| (x, y))) {
+    for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
@@ -48,9 +46,7 @@ pub fn sierra_two<const FAC: u8>(
     let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    let w = image.width();
-    let h = image.height();
-    for (x, y) in (0..h).flat_map(move |y| (0..w).map(move |x| (x, y))) {
+    for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
@@ -84,9 +80,7 @@ pub fn sierra_lite<const FAC: u8>(
     let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    let w = image.width();
-    let h = image.height();
-    for (x, y) in (0..h).flat_map(move |y| (0..w).map(move |x| (x, y))) {
+    for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);

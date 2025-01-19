@@ -82,13 +82,14 @@ checksum = "6a02dba6a60cd31533cf16561ced53239686d18f1464bff49579dd320fcea081"
 [[package]]
 name = "fimg"
 version = "0.4.43"
-source = "git+https://github.com/bend-n/fimg#3e3ca7b2ee24e1a62b8b49d54bf903248371f010"
+source = "git+https://github.com/bend-n/fimg#193a7b4ec395a7e4e102da3cbce11bbebb7bdb85"
 dependencies = [
  "atools",
  "clipline",
  "fer",
+ "hinted",
  "libc",
- "mattr",
+ "mattr 0.0.2",
  "png",
  "umath",
  "vecto",
@@ -122,10 +123,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "libc"
-version = "0.2.168"
+name = "hinted"
+version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aaeb2981e0606ca11d79718f8bb01164f1d6ed75080182d3abf017e6d244b6d"
+checksum = "9965bbdc3ee9917c5bc2b59da94906fce9e3693fc7609c8b178f15bf5077ba69"
+
+[[package]]
+name = "libc"
+version = "0.2.169"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
 
 [[package]]
 name = "mattr"
@@ -134,10 +141,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f63dc7ec862e5d146c89d104d437548fef5216a6a653f4afc4b87c581970677"
 
 [[package]]
-name = "miniz_oxide"
-version = "0.8.0"
+name = "mattr"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2d80299ef12ff69b16a84bb182e3b9df68b5a91574d3d4fa6e41b65deec4df1"
+checksum = "602c380ae9aba3adfad5f01dd23a956f881472b7c9b6b917e57abaa944569de2"
+
+[[package]]
+name = "miniz_oxide"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8402cab7aefae129c6977bb0ff1b8fd9a04eb5b51efc50a70bea51cda0c7924"
 dependencies = [
  "adler2",
  "simd-adler32",
@@ -145,9 +158,9 @@ dependencies = [
 
 [[package]]
 name = "png"
-version = "0.17.15"
+version = "0.17.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67582bd5b65bdff614270e2ea89a1cf15bef71245cc1e5f7ea126977144211d"
+checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
 dependencies = [
  "bitflags",
  "crc32fast",
@@ -167,18 +180,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.92"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d3544b3f2748c54e147655edb5025752e2303145b5aefb3c3ea2c78b973bb0"
+checksum = "60946a68e5f9d28b0dc1c21bb8a97ee7d018a8b322fa57838ba31cc878e22d99"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.37"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
+checksum = "0e4dccaaaf89514f546c693ddc140f729f958c247918a13380cccc6078391acc"
 dependencies = [
  "proc-macro2",
 ]
@@ -222,6 +235,7 @@ dependencies = [
  "exoquant",
  "fimg",
  "fux_kdtree",
+ "mattr 0.0.3",
  "rand",
 ]
 
@@ -233,9 +247,9 @@ checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "syn"
-version = "2.0.90"
+version = "2.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "919d3b74a5dd0ccd15aeb8f93e7006bd9e14c295087c9896a110f490752bcf31"
+checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
 dependencies = [
  "proc-macro2",
  "quote",

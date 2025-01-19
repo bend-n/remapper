@@ -1,6 +1,7 @@
 #![feature(slice_as_chunks, generic_const_exprs)]
 use atools::prelude::*;
 use exoquant::SimpleColorSpace;
+use remapper::ordered;
 
 fn main() {
     reemap();
@@ -15,6 +16,7 @@ fn main() {
 }
 
 fn reemap() {
+    // println!("{:?}", ordered::BAYER_8x8Q);
     // let mut rng = rand::thread_rng();
     // let pal = std::iter::repeat_with(|| {
     //     let a: [f32; 3] = std::array::from_fn(|_| rng.next_u64() as f32 / u64::MAX as f32);
@@ -40,14 +42,14 @@ fn reemap() {
     // println!("{pal:?}");
 
     fimg::Image::<Box<[u8]>, 4>::from(
-        remapper::diffusion::riemerasma(
+        remapper::ordered::remap_bayer_8x8(
             fimg::Image::<Box<[f32]>, 4>::from(
-                fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-                // fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
-                // .show()
-                // .scale::<fimg::scale::Nearest>(800, 480)
-                // .show()
-                // .as_ref(),
+                // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
+                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
+                    // .show()
+                    // .scale::<fimg::scale::Nearest>(800, 480)
+                    // .show()
+                    .as_ref(),
             )
             .as_ref(),
             &pal,
