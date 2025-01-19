@@ -82,7 +82,7 @@ checksum = "6a02dba6a60cd31533cf16561ced53239686d18f1464bff49579dd320fcea081"
 [[package]]
 name = "fimg"
 version = "0.4.43"
-source = "git+https://github.com/bend-n/fimg#193a7b4ec395a7e4e102da3cbce11bbebb7bdb85"
+source = "git+https://github.com/bend-n/fimg#f8b7d64f22414e510a6ea622a5d8aa80dd58997c"
 dependencies = [
  "atools",
  "clipline",

@@ -41,21 +41,17 @@ fn reemap() {
     */
     // println!("{pal:?}");
 
-    fimg::Image::<Box<[u8]>, 4>::from(
-        remapper::ordered::remap_bayer_8x8(
-            fimg::Image::<Box<[f32]>, 4>::from(
-                // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-                fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
-                    // .show()
-                    // .scale::<fimg::scale::Nearest>(800, 480)
-                    // .show()
-                    .as_ref(),
-            )
+    remapper::ordered::bayer32x32(
+        // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
+        fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
+            .as_ref()
+            .to_f32()
             .as_ref(),
-            &pal,
-        )
-        .as_ref(),
+        &pal,
     )
+    .to()
+    .to_u8()
+    .show()
     .save("yeee.png");
 }
 

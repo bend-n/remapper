@@ -1,5 +1,6 @@
 #![allow(incomplete_features, internal_features)]
 #![feature(
+    isqrt,
     const_fn_floating_point_arithmetic,
     inline_const_pat,
     iter_chain,
@@ -25,23 +26,26 @@ pub mod ordered;
 mod dumb;
 mod kd;
 use atools::prelude::*;
-use fimg::Image;
+use fimg::{indexed::IndexedImage, Image};
 use kd::KD;
 // type KD = kiddo::immutable::float::kdtree::ImmutableKdTree<f32, u64, 4, 32>;
 fn map(colors: &[[f32; 4]]) -> KD {
     KD::new(colors)
 }
 
-fn dither(
+fn dither<'a>(
     image: Image<&[f32], 4>,
-    f: impl FnMut(((usize, usize), &[f32; 4])) -> [f32; 4],
-) -> Image<Box<[f32]>, 4> {
-    Image::build(image.width(), image.height()).buf(
-        image
-            .chunked()
-            .zip(image.ordered())
-            .map(|(p, xy)| (xy.array().map(|x| x as usize).tuple(), p))
-            .flat_map(f)
-            .collect(),
-    )
+    f: impl FnMut(((usize, usize), &[f32; 4])) -> u32,
+    pal: &'a [[f32; 4]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]> {
+    IndexedImage::build(image.width(), image.height())
+        .pal(pal)
+        .buf(
+            image
+                .chunked()
+                .zip(image.ordered())
+                .map(|(p, xy)| (xy.array().map(|x| x as usize).tuple(), p))
+                .map(f)
+                .collect(),
+        )
 }
