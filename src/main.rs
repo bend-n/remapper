@@ -1,7 +1,9 @@
 #![feature(slice_as_chunks, generic_const_exprs)]
+use std::time::Instant;
+
 use atools::prelude::*;
 use exoquant::SimpleColorSpace;
-use remapper::ordered;
+use fimg::{DynImage, Image};
 
 fn main() {
     reemap();
@@ -24,15 +26,24 @@ fn reemap() {
     // })
     // .take(5124)
     // .collect::<Vec<_>>();
-    let pal = fimg::Image::<Box<[f32]>, 4>::from(fimg::Image::open("../endesga.png").as_ref());
+    // let mut new = Image::<Vec<u8>, 1>::build(256, 100).alloc();
+    // for pixels in unsafe { new.buffer_mut().chunks_mut(256) } {
+    //     pixels.copy_from_slice(&(0..=u8::MAX).collect::<Vec<_>>());
+    // }
+    // new.save("gradient.png");
+    let pal = Image::<Box<[f32]>, 4>::from(Image::open("tdata/optimal.png").as_ref());
     let pal = pal.flatten();
-    // let pal = [
-    // [0., 0., 0., 1.],
-    // [0.25, 0.25, 0.25, 1.],
-    // [0.5, 0.5, 0.5, 1.],
-    // [0.75, 0.75, 0.75, 1.],
-    // [1.; 4],
-    // ];
+
+    // let pal = &[
+    //     [0., 0., 0., 1.],
+    //     [0.25, 0.25, 0.25, 1.],
+    //     [0.5, 0.5, 0.5, 1.],
+    //     [0.75, 0.75, 0.75, 1.],
+    //     [1.; 4],
+    // ][..];
+    // let pal = &[[0.], [1.]][..];
+    // let pal = &[[0.], [0.25], [0.5], [0.75], [1.]][..];
+    // let pal = &[0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.0].map(|x| [x])[..];
 
     /*let pal = [
         ]
@@ -40,48 +51,59 @@ fn reemap() {
         .map(|x| x.join(255).map(|x| x as f32 * (1.0 / 255.0)));
     */
     // println!("{pal:?}");
-
-    remapper::ordered::bayer32x32(
+    // dbg!(pal.space());
+    let i = DynImage::open("../fimg/tdata/cat.png").to_rgba();
+    // let mut pal = exoquant::generate_palette(
+    //     &i.chunked()
+    //         .map(|&[r, g, b, a]| exoquant::Color::new(r, g, b, a))
+    //         .collect::<exoquant::Histogram>(),
+    //     &exoquant::SimpleColorSpace::default(),
+    //     &exoquant::optimizer::KMeans,
+    //     64,
+    // )
+    // .into_iter()
+    // .map(|exoquant::Color { r, g, b, a }| [r, g, b, a].map(|x| x as f32 * (1.0 / 255.0)))
+    // .collect::<Vec<_>>();
+    // pal.sort_by(|a, b| {
+    //     let lum = |[r, g, b, _]: [f32; 4]| 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    //     lum(*a).total_cmp(&lum(*b))
+    // });
+    // Image::<_, 4>::build(8, 8)
+    //     .buf(pal.as_slice().as_flattened())
+    //     .to_u8()
+    //     .save("tdata/optimal.png");
+    // i.save("gamma/gray.png");
+    let i = i.to_f32();
+    // decode(2.2, encode(1.0, i.as_ref()))
+    //     .to_u8()
+    //     .save("gamma/1_0.png");
+    // decode(2.2, encode(2.0, i.as_ref()))
+    //     .to_u8()
+    //     .save("gamma/2_0.png");
+    // decode(2.2, encode(2.2, i.as_ref()))
+    //     .to_u8()
+    //     .save("gamma/2_2.png");
+    // decode(2.2, encode(2.4, i.as_ref()))
+    //     .to_u8()
+    //     .save("gamma/2_4.png");
+    let x = remapper::ordered::remap(
         // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-        fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png")
-            .as_ref()
-            .to_f32()
-            .as_ref(),
+        i.as_ref(),
         &pal,
     )
     .to()
     .to_u8()
-    .show()
-    .save("yeee.png");
-}
-
-fn eomap() {
-    let x = fimg::Image::<Vec<u8>, 4>::open("../fimg/tdata/cat.png");
-    let pal = fimg::Image::open("../endesga.png");
-    let pal = pal.flatten();
-    let res = exoquant::Remapper::new(
-        &pal.iter()
-            .map(|&[r, g, b, a]| exoquant::Color::new(r, g, b, a))
-            .collect::<Vec<_>>(),
-        &SimpleColorSpace::default(),
-        &exoquant::ditherer::FloydSteinberg::new(),
+    .show();
+    let now = Instant::now();
+    let x = remapper::ordered::blue(
+        // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
+        i.as_ref(),
+        &pal,
     )
-    .remap(
-        &x.chunked()
-            .map(|&[r, g, b, a]| exoquant::Color::new(r, g, b, a))
-            .collect::<Vec<_>>(),
-        x.width() as usize,
-    );
-    let (width, height) = (x.width() as usize, x.height() as usize);
-    let pixels = (0..width)
-        .flat_map(|x_| (0..height).map(move |y| (x_, y)))
-        .filter_map(move |(x_, y_)| match res[(height - y_ - 1) * width + x_] {
-            0 => None,
-            x => Some(((x_, y_), x)),
-        });
-    let mut preview = fimg::Image::build(x.width(), x.height()).fill([0; 3].join(255));
-    for ((x, y), i) in pixels {
-        unsafe { preview.set_pixel(x as _, (height - y - 1) as _, pal[i as usize]) };
-    }
-    preview.save("eoquan.png");
+    .to()
+    .to_u8();
+    dbg!(now.elapsed());
+    x.save("yeee.png");
+    // .show()
+    // .save("yeee.png");
 }

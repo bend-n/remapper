@@ -5,11 +5,13 @@ use super::*;
 mod riemerasma;
 pub mod sierra;
 pub use riemerasma::*;
-pub fn atkinson(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
+pub fn atkinson<const N: usize>(
+    image: Image<&[f32], N>,
+    palette: &[[f32; N]],
+) -> Image<Box<[f32]>, N> {
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    let eighth = [1. / 8.; 4];
+    let eighth = [1. / 8.; N];
     for (x, y) in image.serpent() {
         unsafe {
             /*
@@ -18,10 +20,10 @@ pub fn atkinson(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32
               1
             */
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.best(p);
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
-            let f = |x: [f32; 4]| x.aadd(error.amul(eighth));
+            let f = |x: [f32; N]| x.aadd(error.amul(eighth));
             image.replace(x + 1, y, f);
             image.replace(x + 2, y, f);
 
@@ -39,14 +41,13 @@ pub fn jarvis<const FAC: u8>(
     image: Image<&[f32], 4>,
     palette: &[[f32; 4]],
 ) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.best(p);
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
             let f = |f| {
@@ -79,13 +80,12 @@ pub fn floyd_steinberg<const FAC: u8>(
     image: Image<&[f32], 4>,
     palette: &[[f32; 4]],
 ) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     for (x, y) in image.serpent() {
         unsafe {
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.best(p);
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
             let f = |f| {

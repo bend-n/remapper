@@ -106,12 +106,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fux_kdtree"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "216bf8256834a87394bf0364f82a92444ee8a00c757630a02a2bf278456f74e7"
-
-[[package]]
 name = "getrandom"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -234,7 +228,6 @@ dependencies = [
  "car",
  "exoquant",
  "fimg",
- "fux_kdtree",
  "mattr 0.0.3",
  "rand",
 ]

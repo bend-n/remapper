@@ -41,7 +41,6 @@ impl<T, const N: usize> Ring<T, N> {
 }
 
 pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     #[rustfmt::skip]
@@ -63,7 +62,7 @@ pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f
     hl(
         level,
         UP,
-        &mut (&mut (0, 0), &mut errors, &kd, palette, &mut image),
+        &mut (&mut (0, 0), &mut errors, &(), palette, &mut image),
     );
     fn hl(
         level: u32,
@@ -71,7 +70,7 @@ pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f
         p: &mut (
             &mut (i32, i32),
             &mut Ring<[f32; 4], 16>,
-            &KD,
+            &(),
             &[[f32; 4]],
             &mut Image<Box<[f32]>, 4>,
         ),
@@ -95,7 +94,7 @@ pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f
                         // visualization.set_pixel(x, y, [stage]);
                         // stage += 1;
                         let px = p.4.pixel(x, y).aadd(error);
-                        let np = p.3[p.2.find_nearest(px) as usize];
+                        let np = p.3.best(px);
                         p.1.pop_front_push_back(px.asub(np));
                         *p.4.pixel_mut(x, y) = np;
                     }

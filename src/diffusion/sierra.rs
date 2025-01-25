@@ -1,17 +1,15 @@
 use super::*;
-
 pub fn sierra<const FAC: u8>(
     image: Image<&[f32], 4>,
     palette: &[[f32; 4]],
 ) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.closest(p).1;
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
             let f = |f| {
@@ -43,14 +41,13 @@ pub fn sierra_two<const FAC: u8>(
     image: Image<&[f32], 4>,
     palette: &[[f32; 4]],
 ) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.best(p);
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
             let f = |f| {
@@ -77,14 +74,13 @@ pub fn sierra_lite<const FAC: u8>(
     image: Image<&[f32], 4>,
     palette: &[[f32; 4]],
 ) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     for (x, y) in image.serpent() {
         #[rustfmt::skip]
         unsafe {
             let p = image.pixel(x, y);
-            let new = palette[kd.find_nearest(p) as usize];
+            let new = palette.best(p);
             *image.pixel_mut(x, y) = new;
             let error = p.asub(new);
             let f = |f| {

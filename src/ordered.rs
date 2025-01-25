@@ -49,11 +49,11 @@ const BAYER_16X16: [f32; 16 * 16] = threshold(BAYER3);
 const BAYER_32X32: [f32; 32 * 32] = threshold(BAYER4);
 const BAYER_64X64: [f32; 64 * 64] = threshold(BAYER5);
 
-fn dither_with<'a, const N: usize>(
-    image: Image<&[f32], 4>,
-    mut f: impl FnMut(((usize, usize), &[f32; 4])) -> u32,
-    palette: &'a [[f32; 4]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]> {
+fn dither_with<'a, const N: usize, const C: usize>(
+    image: Image<&[f32], C>,
+    mut f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
+    palette: &'a [[f32; C]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
     dither(image, |((x, y), p)| f(((x % N, y % N), p)), palette)
 }
 
@@ -62,17 +62,16 @@ macro_rules! bayer {
         /// Ordered dithering via a bayer matrix.
         ///
         /// Dont expect too much difference from each of them.
-        pub fn $i<'a>(
-            image: Image<&[f32], 4>,
-            palette: &'a [[f32; 4]],
-        ) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]> {
-            let kd = map(palette);
-            let r = kd.space(palette);
-            dither_with::<$j>(
+        pub fn $i<'a, const C: usize>(
+            image: Image<&[f32], C>,
+            palette: &'a [[f32; C]],
+        ) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
+            let r = palette.space();
+            dither_with::<$j, C>(
                 image.into(),
                 |((x, y), &p)| {
                     let color = p.add(r * $c[x + y * $j]);
-                    kd.find_nearest(color)
+                    palette.closest(color).2 as u32
                 },
                 palette,
             )
@@ -87,95 +86,120 @@ bayer!(bayer16x16, BAYER_16X16, 16);
 bayer!(bayer32x32, BAYER_32X32, 32);
 bayer!(bayer64x64, BAYER_64X64, 64);
 
-pub fn remap<'a, 'b>(
-    image: Image<&'b [f32], 4>,
-    palette: &'a [[f32; 4]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]> {
-    let kd = map(palette);
+pub fn remap<'a, const C: usize>(
+    image: Image<&[f32], C>,
+    palette: &'a [[f32; C]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
     // todo!();
     IndexedImage::build(image.width(), image.height())
         .pal(palette)
-        .buf(image.chunked().map(|x| kd.find_nearest(*x)).collect())
+        .buf(
+            image
+                .chunked()
+                .map(|x| palette.nearest(*x) as u32)
+                .collect(),
+        )
 }
 
-const BLUE: Image<[f32; 1024 * 1024 * 3], 3> = unsafe {
+const BLUE: Image<[f32; 1024 * 1024], 1> = unsafe {
     Image::new(
         std::num::NonZero::new(1024).unwrap(),
         std::num::NonZero::new(1024).unwrap(),
-        std::mem::transmute(*include_bytes!("../blue.f32")),
+        std::mem::transmute(*include_bytes!("../blue_1.f32")),
     )
 };
-// todo: figure this out? seems off.
-/*
-pub fn remap_blue(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
-    // Image::<Box<[u8]>, 3>::from(BLUE.as_ref()).show();
-    dither(image, |((x, y), p)| {
-        let (p, al) = p.pop();
-        let noise = unsafe { BLUE.pixel(x as u32 % 1024, y as u32 % 1024) }.sub(0.5);
 
-        fn lin_to_srgb(x: f32) -> f32 {
-            if x.abs() <= 0.0031308 {
-                x * 12.92
-            } else {
-                (1.055 * x.abs().powf(1.0 / 2.4) - 0.055).copysign(x)
-            }
-        }
+// const Γ: f32 = 2.4;
+const A: f32 = 12.92;
 
-        fn srgb_to_lin(x: f32) -> f32 {
-            if x.abs() <= 0.04045 {
-                x * (1.0 / 12.92)
-            } else {
-                ((x.abs() + 0.055) * (1.0 / 1.055)).powf(2.4).copysign(x)
-            }
-        }
-
-        let c = p
-            .map(srgb_to_lin)
-            .zip(noise)
-            .map(|(x, noise)| x + noise)
-            .map(lin_to_srgb)
-            .join(al);
-        // let yuv = [
-        //     p.amul([0.299, 0.587, 0.114]).sum(),
-        //     p.amul([-0.14713, -0.28886, 0.436]).sum(),
-        //     p.amul([0.615, -0.51499, -0.10001]).sum(),
-        // ];
-        // let c = yuv.zip(noise).map(|(x, noise)| x + noise);
-        // let c = [
-        //     c.amul([1., 0., 1.13983]).sum(),
-        //     c.amul([1., -0.39465, -0.58060]).sum(),
-        //     c.amul([1., 2.03211, 0.]).sum(),
-        // ];
-
-        // let c = c.join(al);
-        palette[kd.find_nearest(c) as usize]
-    })
+const U: f32 = 0.04045;
+const C: f32 = 0.055;
+fn srgb_to_lin(x: f32, γ: f32) -> f32 {
+    // x.powf(1.0 / Γ)
+    // https://wikimedia.org/api/rest_v1/media/math/render/svg/e401b31b97a8ddcf1de2b87b3606a278a645324e
+    if x <= U {
+        // x / A
+        x * (1.0 / A)
+    } else {
+        // x + C / ⎞ ^ Γ
+        // 1 + C   ⎠
+        ((x + C) * (1.0 / (1.0 + C))).powf(γ)
+    }
 }
 
-
-
-pub fn remap_triangular(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
-    let kd = map(palette);
-    dither(image, |((x, y), p)| {
-        let (p, al) = p.pop();
-        let noise = unsafe { BLUE.pixel(x as u32 % 1024, y as u32 % 1024) };
-        let c = p
-            .zip(noise)
-            .map(|(x, noise)| {
-                let noise = if x < (0.5 / 255.) || x > (254.5 / 255.) {
-                    noise - 0.5
-                } else {
-                    if noise < 0.5 {
-                        (2.0 * noise).sqrt() - 1.0
-                    } else {
-                        1.0 - (2.0 - 2.0 * noise).sqrt()
-                    }
-                };
-                x + noise
-            })
-            .join(al);
-        palette[kd.find_nearest(c) as usize]
-    })
+const V: f32 = 0.0031308;
+fn lin_to_srgb(x: f32, γ: f32) -> f32 {
+    // x.powf(Γ)
+    if x <= V {
+        A * x
+    } else {
+        // (1 + C)x¹⸍ᵞ - C
+        (1.0 + C) * x.powf(1.0 / γ) - C
+    }
 }
-*/
+
+pub fn encode<const C: usize, T: AsRef<[f32]>>(
+    γ: f32, image: Image<T, C>
+) -> Image<Box<[f32]>, C> {
+    Image::build(image.width(), image.height()).buf(
+        image
+            .chunked()
+            .flat_map(|x| x.map(|x| srgb_to_lin(x, γ)))
+            .collect(),
+    )
+}
+
+pub fn decode<const C: usize, T: AsRef<[f32]>>(
+    γ: f32, image: Image<T, C>
+) -> Image<Box<[f32]>, C> {
+    Image::build(image.width(), image.height()).buf(
+        image
+            .chunked()
+            .flat_map(|x| x.map(|x| lin_to_srgb(x, γ)))
+            .collect(),
+    )
+}
+
+pub fn blue<'a, const C: usize>(
+    image: Image<&[f32], C>,
+    palette: &'a [[f32; C]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
+    dither_with::<1024, C>(
+        image,
+        |((x, y), p)| unsafe {
+            let [noise] = BLUE.pixel(x as u32, y as u32);
+            palette.nearest(p.add(noise - 0.5)) as u32
+        },
+        palette,
+    )
+}
+
+pub fn triangular<'a, const C: usize>(
+    image: Image<&[f32], C>,
+    palette: &'a [[f32; C]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]>
+where
+{
+    // https://computergraphics.stackexchange.com/questions/5904/whats-a-proper-way-to-clamp-dither-noise/5952#5952
+    fn triangle(x: f32, noise: f32) -> f32 {
+        let noise = if x < (0.5 / 255.) || x > (254.5 / 255.) {
+            noise - 0.5
+        } else {
+            if noise < 0.5 {
+                (2.0 * noise).sqrt() - 1.0
+            } else {
+                1.0 - (2.0 - 2.0 * noise).sqrt()
+            }
+        };
+        x + noise * 0.9
+    }
+
+    dither_with::<1024, C>(
+        image,
+        |((x, y), p)| unsafe {
+            let [noise] = BLUE.pixel(x as u32, y as u32);
+            palette.nearest(p.map(|x| triangle(x, noise))) as u32
+        },
+        palette,
+    )
+}

@@ -1,6 +1,7 @@
-#![allow(incomplete_features, internal_features)]
+#![allow(incomplete_features, internal_features, mixed_script_confusables)]
 #![feature(
     isqrt,
+    vec_into_raw_parts,
     const_fn_floating_point_arithmetic,
     inline_const_pat,
     iter_chain,
@@ -23,21 +24,16 @@
 pub mod diffusion;
 pub mod ordered;
 
-mod dumb;
-mod kd;
+pub mod dumb;
 use atools::prelude::*;
+use dumb::Closest;
 use fimg::{indexed::IndexedImage, Image};
-use kd::KD;
-// type KD = kiddo::immutable::float::kdtree::ImmutableKdTree<f32, u64, 4, 32>;
-fn map(colors: &[[f32; 4]]) -> KD {
-    KD::new(colors)
-}
 
-fn dither<'a>(
-    image: Image<&[f32], 4>,
-    f: impl FnMut(((usize, usize), &[f32; 4])) -> u32,
-    pal: &'a [[f32; 4]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]> {
+fn dither<'a, const C: usize>(
+    image: Image<&[f32], C>,
+    f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
+    pal: &'a [[f32; C]],
+) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
     IndexedImage::build(image.width(), image.height())
         .pal(pal)
         .buf(
