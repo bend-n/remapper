@@ -1,9 +1,6 @@
-#![feature(slice_as_chunks, generic_const_exprs)]
-use std::time::Instant;
-
-use atools::prelude::*;
-use exoquant::SimpleColorSpace;
+#![feature(slice_as_chunks, generic_arg_infer, iter_chain)]
 use fimg::{DynImage, Image};
+use std::time::Instant;
 
 fn main() {
     reemap();
@@ -53,6 +50,7 @@ fn reemap() {
     // println!("{pal:?}");
     // dbg!(pal.space());
     let i = DynImage::open("../fimg/tdata/cat.png").to_rgba();
+    // let pal = [[0.], [1.]];
     // let mut pal = exoquant::generate_palette(
     //     &i.chunked()
     //         .map(|&[r, g, b, a]| exoquant::Color::new(r, g, b, a))
@@ -86,19 +84,10 @@ fn reemap() {
     // decode(2.2, encode(2.4, i.as_ref()))
     //     .to_u8()
     //     .save("gamma/2_4.png");
-    let x = remapper::ordered::remap(
-        // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-        i.as_ref(),
-        &pal,
-    )
-    .to()
-    .to_u8()
-    .show();
     let now = Instant::now();
-    let x = remapper::ordered::blue(
+    let x = remapper::diffusion::sierra::sierra::<255, 4>(
         // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-        i.as_ref(),
-        &pal,
+        i, &pal,
     )
     .to()
     .to_u8();

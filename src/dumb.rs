@@ -1,10 +1,10 @@
 use atools::prelude::*;
 pub trait Closest<const N: usize> {
-    fn closest(&self, color: [f32; N]) -> (f32, [f32; N], usize);
+    fn closest(&self, color: [f32; N]) -> (f32, [f32; N], u32);
     fn best(&self, color: [f32; N]) -> [f32; N] {
         self.closest(color).1
     }
-    fn nearest(&self, color: [f32; N]) -> usize {
+    fn nearest(&self, color: [f32; N]) -> u32 {
         self.closest(color).2
     }
     fn space(&self) -> f32;
@@ -16,13 +16,18 @@ fn euclidean_distance<const N: usize>(f: [f32; N], with: [f32; N]) -> f32 {
         .sum()
 }
 
+#[no_mangle]
+fn closeer(x: [f32; 4], p: &[[f32; 4]]) -> [f32; 4] {
+    p.best(x)
+}
+
 impl<const N: usize> Closest<N> for &[[f32; N]] {
     /// o(nn)
-    fn closest(&self, color: [f32; N]) -> (f32, [f32; N], usize) {
-        self.iter()
-            .copied()
-            .enumerate()
-            .map(|(i, x)| (euclidean_distance(x, color), x, i))
+    #[inline]
+    fn closest(&self, color: [f32; N]) -> (f32, [f32; N], u32) {
+        (0..)
+            .zip(*self)
+            .map(|(i, &x)| (euclidean_distance(x, color), x, i))
             .min_by(|x, y| x.0.total_cmp(&y.0))
             .unwrap()
     }

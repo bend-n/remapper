@@ -52,8 +52,8 @@ const BAYER_64X64: [f32; 64 * 64] = threshold(BAYER5);
 fn dither_with<'a, const N: usize, const C: usize>(
     image: Image<&[f32], C>,
     mut f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
-    palette: &'a [[f32; C]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
+    palette: pal<'a, C>,
+) -> out<'a, pal<'a, C>> {
     dither(image, |((x, y), p)| f(((x % N, y % N), p)), palette)
 }
 
@@ -64,8 +64,8 @@ macro_rules! bayer {
         /// Dont expect too much difference from each of them.
         pub fn $i<'a, const C: usize>(
             image: Image<&[f32], C>,
-            palette: &'a [[f32; C]],
-        ) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
+            palette: pal<'a, C>,
+        ) -> out<'a, pal<'a, C>> {
             let r = palette.space();
             dither_with::<$j, C>(
                 image.into(),
@@ -88,17 +88,18 @@ bayer!(bayer64x64, BAYER_64X64, 64);
 
 pub fn remap<'a, const C: usize>(
     image: Image<&[f32], C>,
-    palette: &'a [[f32; C]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
-    // todo!();
-    IndexedImage::build(image.width(), image.height())
-        .pal(palette)
-        .buf(
-            image
-                .chunked()
-                .map(|x| palette.nearest(*x) as u32)
-                .collect(),
-        )
+    palette: pal<'a, C>,
+) -> out<'a, pal<'a, C>> {
+    unsafe {
+        IndexedImage::build(image.width(), image.height())
+            .pal(palette)
+            .buf_unchecked(
+                image
+                    .chunked()
+                    .map(|x| palette.nearest(*x) as u32)
+                    .collect(),
+            )
+    }
 }
 
 const BLUE: Image<[f32; 1024 * 1024], 1> = unsafe {
@@ -162,8 +163,8 @@ pub fn decode<const C: usize, T: AsRef<[f32]>>(
 
 pub fn blue<'a, const C: usize>(
     image: Image<&[f32], C>,
-    palette: &'a [[f32; C]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
+    palette: pal<'a, C>,
+) -> out<'a, pal<'a, C>> {
     dither_with::<1024, C>(
         image,
         |((x, y), p)| unsafe {
@@ -176,8 +177,8 @@ pub fn blue<'a, const C: usize>(
 
 pub fn triangular<'a, const C: usize>(
     image: Image<&[f32], C>,
-    palette: &'a [[f32; C]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]>
+    palette: pal<'a, C>,
+) -> out<'a, pal<'a, C>>
 where
 {
     // https://computergraphics.stackexchange.com/questions/5904/whats-a-proper-way-to-clamp-dither-noise/5952#5952

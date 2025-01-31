@@ -29,6 +29,12 @@ macro_rules! test {
             test(stringify!($x), $call);
         }
     };
+    (boxed $x:ident, $call:path) => {
+        #[test]
+        fn $x() {
+            test(stringify!($x), |x, p| $call(x.boxed(), p))
+        }
+    };
 }
 
 test!(o2x2, remapper::ordered::bayer2x2);
@@ -38,6 +44,6 @@ test!(o16x16, remapper::ordered::bayer16x16);
 test!(o32x32, remapper::ordered::bayer32x32);
 test!(o64x64, remapper::ordered::bayer64x64);
 
-// test!(s1, remapper::diffusion::sierra::sierra::<241>);
-// test!(s2, remapper::diffusion::sierra::sierra_two::<241>);
-// test!(s3, remapper::diffusion::sierra::sierra_lite::<241>);
+test!(boxed s1, remapper::diffusion::sierra::sierra::<255, 4>);
+test!(boxed s2, remapper::diffusion::sierra::sierra_two::<255, 4>);
+test!(boxed s3, remapper::diffusion::sierra::sierra_lite::<255, 4>);

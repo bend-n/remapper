@@ -1,101 +1,96 @@
 use super::*;
-pub fn sierra<const FAC: u8>(
-    image: Image<&[f32], 4>,
-    palette: &[[f32; 4]],
-) -> Image<Box<[f32]>, 4> {
-    let mut image =
-        Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    for (x, y) in image.serpent() {
-        #[rustfmt::skip]
-        unsafe {
-            let p = image.pixel(x, y);
-            let new = palette.closest(p).1;
-            *image.pixel_mut(x, y) = new;
-            let error = p.asub(new);
-            let f = |f| {
-                move |x: [f32; 4]| {
-                    x.aadd(error.amul([(f as f32 / 32.) * const { FAC as f32 * (1.0 / 255.) }; 4]))
-                }
-            };
-            /*  * 5 3
-            2 4 5 4 2
-              2 3 2 */
-            image.replace(x +             1, y, f(5));
-            image.replace(x +             2, y, f(3));
-            let y = y + 1;
-            image.replace(x.wrapping_sub(2), y, f(2));
-            image.replace(x.wrapping_sub(1), y, f(4));
-            image.replace(x                , y, f(5));
-            image.replace(x             + 1, y, f(4));
-            image.replace(x             + 2, y, f(2));
-            let y = y + 1;
-            image.replace(x.wrapping_sub(1), y, f(2));
-            image.replace(x                , y, f(3));
-            image.replace(x             + 1, y, f(2));
-        }
-    }
-    image
+pub fn sierra<'p, const FAC: u8, const N: usize>(
+    mut image: Image<Box<[f32]>, N>,
+    palette: pal<'p, N>,
+) -> out<'p, pal<'p, N>> {
+    let out = out::build(image.width(), image.height()).pal(palette);
+    #[rustfmt::skip]
+    let i = image.serpent().map(|c @ (x, y)| unsafe { 
+        let p = image.pixel(x, y);
+        let (_, new, i) = palette.closest(p);
+        *image.pixel_mut(x, y) = new;
+        let error = p.asub(new);
+        let f = |f| {
+            move |x: [f32; N]| {
+                x.aadd(error.amul([(f as f32 / 32.) * const { FAC as f32 * (1.0 / 255.) }; N]))
+            }
+        };
+        /*  * 5 3
+        2 4 5 4 2
+            2 3 2 */
+        image.replace(x +             1, y, f(5));
+        image.replace(x +             2, y, f(3));
+        let y = y + 1;
+        image.replace(x.wrapping_sub(2), y, f(2));
+        image.replace(x.wrapping_sub(1), y, f(4));
+        image.replace(x                , y, f(5));
+        image.replace(x             + 1, y, f(4));
+        image.replace(x             + 2, y, f(2));
+        let y = y + 1;
+        image.replace(x.wrapping_sub(1), y, f(2));
+        image.replace(x                , y, f(3));
+        image.replace(x             + 1, y, f(2));
+        (c, i)
+    });
+    unsafe { out.from_iter(i) }
 }
 
-pub fn sierra_two<const FAC: u8>(
-    image: Image<&[f32], 4>,
-    palette: &[[f32; 4]],
-) -> Image<Box<[f32]>, 4> {
-    let mut image =
-        Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    for (x, y) in image.serpent() {
-        #[rustfmt::skip]
-        unsafe {
-            let p = image.pixel(x, y);
-            let new = palette.best(p);
-            *image.pixel_mut(x, y) = new;
-            let error = p.asub(new);
-            let f = |f| {
-                move |x: [f32; 4]| {
-                    x.aadd(error.amul([(f as f32 / 16.) * const { FAC as f32 * (1.0 / 255.) }; 4]))
-                }
-            };
-            /*  * 4 3
-            1 2 3 2 1 */
-            image.replace(x +             1, y, f(4));
-            image.replace(x +             2, y, f(3));
-            let y = y + 1;
-            image.replace(x.wrapping_sub(2), y, f(1));
-            image.replace(x.wrapping_sub(1), y, f(2));
-            image.replace(x                , y, f(3));
-            image.replace(x             + 1, y, f(2));
-            image.replace(x             + 2, y, f(1));
-        }
-    }
-    image
+pub fn sierra_two<'p, const FAC: u8, const N: usize>(
+    mut image: Image<Box<[f32]>, N>,
+    palette: pal<'p, N>,
+) -> out<'p, pal<'p, N>> {
+    let out = out::build(image.width(), image.height()).pal(palette);
+    #[rustfmt::skip]
+    let i = image.serpent().map(|c@(x, y)| unsafe {
+        let p = image.pixel(x, y);
+        let (_, new, i) = palette.closest(p);
+        *image.pixel_mut(x, y) = new;
+        let error = p.asub(new);
+        let f = |f| {
+            move |x: [f32; N]| {
+                x.aadd(error.amul([(f as f32 / 16.) * const { FAC as f32 * (1.0 / 255.) }; N]))
+            }
+        };
+        /*  * 4 3
+        1 2 3 2 1 */
+        image.replace(x +             1, y, f(4));
+        image.replace(x +             2, y, f(3));
+        let y = y + 1;
+        image.replace(x.wrapping_sub(2), y, f(1));
+        image.replace(x.wrapping_sub(1), y, f(2));
+        image.replace(x                , y, f(3));
+        image.replace(x             + 1, y, f(2));
+        image.replace(x             + 2, y, f(1));
+        (c, i)
+    });
+    unsafe { out.from_iter(i) }
 }
 
-pub fn sierra_lite<const FAC: u8>(
-    image: Image<&[f32], 4>,
-    palette: &[[f32; 4]],
-) -> Image<Box<[f32]>, 4> {
-    let mut image =
-        Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
-    for (x, y) in image.serpent() {
-        #[rustfmt::skip]
-        unsafe {
-            let p = image.pixel(x, y);
-            let new = palette.best(p);
-            *image.pixel_mut(x, y) = new;
-            let error = p.asub(new);
-            let f = |f| {
-                move |x: [f32; 4]| {
-                    x.aadd(error.amul([(f as f32 / 4.) * const { FAC as f32 * (1.0 / 255.) }; 4]))
-                }
-            };
-            #[allow(warnings)]
-            /** 2
-            1 1 */
-            image.replace(x +             1, y, f(2));
-            let y = y + 1;
-            image.replace(x.wrapping_sub(1), y, f(1));
-            image.replace(x                , y, f(1));
-        }
-    }
-    image
+pub fn sierra_lite<'p, const FAC: u8, const N: usize>(
+    mut image: Image<Box<[f32]>, N>,
+    palette: pal<'p, N>,
+) -> out<'p, pal<'p, N>> {
+    let out = out::build(image.width(), image.height()).pal(palette);
+    #[rustfmt::skip]
+    let i = image.serpent().map(|c@(x, y)| unsafe {
+        let p = image.pixel(x, y);
+        let (_, new, i) = palette.closest(p);
+        *image.pixel_mut(x, y) = new;
+        let error = p.asub(new);
+        let f = |f| {
+            move |x: [f32; N]| {
+                x.aadd(error.amul([(f as f32 / 4.) * const { FAC as f32 * (1.0 / 255.) }; N]))                
+            }
+        };
+        
+        #[allow(warnings)]
+        /** 2
+        1 1 */
+        image.replace(x +             1, y, f(2));
+        let y = y + 1;
+        image.replace(x.wrapping_sub(1), y, f(1));
+        image.replace(x                , y, f(1));
+        (c, i)
+    });
+    unsafe { out.from_iter(i) }
 }

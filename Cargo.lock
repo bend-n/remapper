@@ -82,7 +82,7 @@ checksum = "6a02dba6a60cd31533cf16561ced53239686d18f1464bff49579dd320fcea081"
 [[package]]
 name = "fimg"
 version = "0.4.43"
-source = "git+https://github.com/bend-n/fimg#f8b7d64f22414e510a6ea622a5d8aa80dd58997c"
+source = "git+https://github.com/bend-n/fimg#e88f04d286a94a154865372b115cca6f842cadaf"
 dependencies = [
  "atools",
  "clipline",
@@ -118,15 +118,35 @@ dependencies = [
 
 [[package]]
 name = "hinted"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9965bbdc3ee9917c5bc2b59da94906fce9e3693fc7609c8b178f15bf5077ba69"
+checksum = "c488b6122f67ca2749a801d562c8c952e1778c42910c43ef537a6f5a46b524f2"
 
 [[package]]
 name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
+
+[[package]]
+name = "lower"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "112b2b73ad1a9f69f5e3b6ede21f28b2a5aead191ccb9e8b8156f766c73696c9"
+dependencies = [
+ "lower-macros",
+]
+
+[[package]]
+name = "lower-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fff64bae8cfa89c8871e4b07d27629aa000978b341b98ba5fc1a0a55e2a79a53"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "mattr"
@@ -228,6 +248,9 @@ dependencies = [
  "car",
  "exoquant",
  "fimg",
+ "hinted",
+ "lower",
+ "lower-macros",
  "mattr 0.0.3",
  "rand",
 ]
@@ -257,9 +280,9 @@ checksum = "42f74eb7957e3a63fa27bfa53c3d361e7ce3871e66f2518292a011eb8e2c00cc"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "a210d160f08b701c8721ba1c726c11662f877ea6b7094007e1ca9a1041945034"
 
 [[package]]
 name = "vecto"

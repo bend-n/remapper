@@ -20,6 +20,9 @@
     array_windows,
     iter_map_windows
 )]
+#![allow(non_camel_case_types)]
+type pal<'palette, const N: usize> = &'palette [[f32; N]];
+type out<'palette, P> = IndexedImage<Box<[u32]>, P>;
 
 pub mod diffusion;
 pub mod ordered;
@@ -32,16 +35,18 @@ use fimg::{indexed::IndexedImage, Image};
 fn dither<'a, const C: usize>(
     image: Image<&[f32], C>,
     f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
-    pal: &'a [[f32; C]],
-) -> IndexedImage<Box<[u32]>, &'a [[f32; C]]> {
-    IndexedImage::build(image.width(), image.height())
-        .pal(pal)
-        .buf(
-            image
-                .chunked()
-                .zip(image.ordered())
-                .map(|(p, xy)| (xy.array().map(|x| x as usize).tuple(), p))
-                .map(f)
-                .collect(),
-        )
+    pal: pal<'a, C>,
+) -> out<'a, pal<'a, C>> {
+    unsafe {
+        IndexedImage::build(image.width(), image.height())
+            .pal(pal)
+            .buf_unchecked(
+                image
+                    .chunked()
+                    .zip(image.ordered())
+                    .map(|(p, xy)| (xy.array().map(|x| x as usize).tuple(), p))
+                    .map(f)
+                    .collect(),
+            )
+    }
 }
