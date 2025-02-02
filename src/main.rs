@@ -87,7 +87,8 @@ fn reemap() {
     let now = Instant::now();
     let x = remapper::diffusion::sierra::sierra::<255, 4>(
         // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
-        i, &pal,
+        i,
+        pal.into(),
     )
     .to()
     .to_u8();

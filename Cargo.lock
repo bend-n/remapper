@@ -130,18 +130,18 @@ checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
 
 [[package]]
 name = "lower"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "112b2b73ad1a9f69f5e3b6ede21f28b2a5aead191ccb9e8b8156f766c73696c9"
+checksum = "2fd0c6f0db6ca73f3b9fe78e6da8a879b9682974c2da089008309f7c2acc958d"
 dependencies = [
  "lower-macros",
 ]
 
 [[package]]
 name = "lower-macros"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff64bae8cfa89c8871e4b07d27629aa000978b341b98ba5fc1a0a55e2a79a53"
+checksum = "383823c24b2a094a6a9de418eba3b60bf8186b688e74e4a20ba5321dfae04fba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -250,7 +250,6 @@ dependencies = [
  "fimg",
  "hinted",
  "lower",
- "lower-macros",
  "mattr 0.0.3",
  "rand",
 ]
@@ -263,9 +262,9 @@ checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "syn"
-version = "2.0.96"
+version = "2.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
+checksum = "36147f1a48ae0ec2b5b3bc5b537d267457555a10dc06f3dbc8cb11ba3006d3b1"
 dependencies = [
  "proc-macro2",
  "quote",

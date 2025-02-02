@@ -1,15 +1,16 @@
 use fimg::{indexed::IndexedImage, Image};
+use remapper::pal;
 
 fn test(
     k: &'static str,
-    f: for<'a> fn(Image<&[f32], 4>, &'a [[f32; 4]]) -> IndexedImage<Box<[u32]>, &'a [[f32; 4]]>,
+    f: for<'a, 'b> fn(Image<&'b [f32], 4>, pal<'a, 4>) -> IndexedImage<Box<[u32]>, pal<'a, 4>>,
 ) {
     let pal = fimg::Image::<Box<[f32]>, 4>::from(fimg::Image::open("tdata/endesga.png").as_ref());
     let pal = pal.flatten();
     // let d = f(fimg::Image::open("tdata/small_cat.png").to_f32().as_ref(), &pal).to().to_u8().show();
     let d = f(
         fimg::Image::open("tdata/small_cat.png").to_f32().as_ref(),
-        &pal,
+        pal.into(),
     )
     .into_raw_parts()
     .0

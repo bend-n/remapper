@@ -21,13 +21,37 @@
     iter_map_windows
 )]
 #![allow(non_camel_case_types)]
-type pal<'palette, const N: usize> = &'palette [[f32; N]];
+#[derive(Copy, Clone)]
+pub struct pal<'palette, const N: usize> {
+    inner: &'palette [[f32; N]],
+}
+impl<'a, const N: usize> From<&'a [[f32; N]]> for pal<'a, N> {
+    fn from(value: &'a [[f32; N]]) -> Self {
+        assert!(value.len() != 0);
+        assert!(value.len() < u32::MAX as usize);
+        pal { inner: value }
+    }
+}
+impl<'a, const N: usize> AsRef<[[f32; N]]> for pal<'a, N> {
+    fn as_ref(&self) -> &[[f32; N]] {
+        &*self
+    }
+}
+impl<'a, const N: usize> Deref for pal<'a, N> {
+    type Target = [[f32; N]];
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
 type out<'palette, P> = IndexedImage<Box<[u32]>, P>;
 
 pub mod diffusion;
 pub mod ordered;
 
 pub mod dumb;
+use std::ops::Deref;
+
 use atools::prelude::*;
 use dumb::Closest;
 use fimg::{indexed::IndexedImage, Image};

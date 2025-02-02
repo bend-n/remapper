@@ -40,7 +40,7 @@ impl<T, const N: usize> Ring<T, N> {
     }
 }
 
-pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f32]>, 4> {
+pub fn riemerasma(image: Image<&[f32], 4>, palette: pal<'_, 4>) -> Image<Box<[f32]>, 4> {
     let mut image =
         Image::build(image.width(), image.height()).buf(image.buffer().to_vec().into_boxed_slice());
     #[rustfmt::skip]
@@ -71,7 +71,7 @@ pub fn riemerasma(image: Image<&[f32], 4>, palette: &[[f32; 4]]) -> Image<Box<[f
             &mut (i32, i32),
             &mut Ring<[f32; 4], 16>,
             &(),
-            &[[f32; 4]],
+            pal<4>,
             &mut Image<Box<[f32]>, 4>,
         ),
     ) {
