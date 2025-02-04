@@ -50,7 +50,7 @@ const BAYER_32X32: [f32; 32 * 32] = threshold(BAYER4);
 const BAYER_64X64: [f32; 64 * 64] = threshold(BAYER5);
 
 fn dither_with<'a, const N: usize, const C: usize>(
-    image: Image<&[f32], C>,
+    image: Image<impl AsRef<[f32]>, C>,
     mut f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
     palette: pal<'a, C>,
 ) -> out<'a, pal<'a, C>> {
@@ -63,7 +63,7 @@ macro_rules! bayer {
         ///
         /// Dont expect too much difference from each of them.
         pub fn $i<'a, const C: usize>(
-            image: Image<&[f32], C>,
+            image: Image<impl AsRef<[f32]>, C>,
             palette: pal<'a, C>,
         ) -> out<'a, pal<'a, C>> {
             let r = palette.space();
@@ -87,7 +87,7 @@ bayer!(bayer32x32, BAYER_32X32, 32);
 bayer!(bayer64x64, BAYER_64X64, 64);
 
 pub fn remap<'a, const C: usize>(
-    image: Image<&[f32], C>,
+    image: Image<impl AsRef<[f32]>, C>,
     palette: pal<'a, C>,
 ) -> out<'a, pal<'a, C>> {
     unsafe {
@@ -162,7 +162,7 @@ pub fn decode<const C: usize, T: AsRef<[f32]>>(
 }
 
 pub fn blue<'a, const C: usize>(
-    image: Image<&[f32], C>,
+    image: Image<impl AsRef<[f32]>, C>,
     palette: pal<'a, C>,
 ) -> out<'a, pal<'a, C>> {
     dither_with::<1024, C>(
@@ -176,7 +176,7 @@ pub fn blue<'a, const C: usize>(
 }
 
 pub fn triangular<'a, const C: usize>(
-    image: Image<&[f32], C>,
+    image: Image<impl AsRef<[f32]>, C>,
     palette: pal<'a, C>,
 ) -> out<'a, pal<'a, C>>
 where

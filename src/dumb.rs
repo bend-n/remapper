@@ -1,3 +1,4 @@
+#![lower::apply(algebraic)]
 use atools::prelude::*;
 use lower::algebraic::math;
 pub trait Closest<const N: usize> {
@@ -13,12 +14,10 @@ pub trait Closest<const N: usize> {
 
 #[inline(always)]
 fn euclidean_distance<const N: usize>(f: [f32; N], with: [f32; N]) -> f32 {
-    math! {
-        f.asub(with)
-            .map(|x| x*x)
-            .into_iter()
-            .fold(0.0, |acc, x| acc + x)
-    }
+    f.asub(with)
+        .map(|x| x * x)
+        .into_iter()
+        .fold(0.0, |acc, x| acc + x)
 }
 
 #[inline(always)]
@@ -47,18 +46,20 @@ impl<'a, const N: usize> Closest<N> for super::pal<'a, N> {
     /// o(nn)
     #[cold]
     fn space(&self) -> f32 {
-        math! {
         self.iter()
             .enumerate()
             .map(|(i, &x)| {
-                minwby(f32::MAX, self.iter()
-                    .enumerate()
-                    .filter(|&(j, _)| j != i)
-                    .map(|(_, &y)| euclidean_distance(y, x)),
-                std::convert::identity).sqrt()
+                minwby(
+                    f32::MAX,
+                    self.iter()
+                        .enumerate()
+                        .filter(|&(j, _)| j != i)
+                        .map(|(_, &y)| euclidean_distance(y, x)),
+                    std::convert::identity,
+                )
+                .sqrt()
             })
             .fold(0.0, |x, y| x + y)
             / self.len() as f32
-        }
     }
 }

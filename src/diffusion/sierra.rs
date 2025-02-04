@@ -1,9 +1,16 @@
 use super::*;
+#[no_mangle]
+fn seeerad<'p>(x: Image<Box<[f32]>, 1>, palette: pal<'p, 1>) -> out<'p, pal<'p, 1>>{
+    sierra::<255,1>(x, palette)
+}
+
+
 pub fn sierra<'p, const FAC: u8, const N: usize>(
     mut image: Image<Box<[f32]>, N>,
     palette: pal<'p, N>,
 ) -> out<'p, pal<'p, N>> {
     let out = out::build(image.width(), image.height()).pal(palette);
+    let fac = const { FAC as f32 / 255.0 };
     #[rustfmt::skip]
     let i = image.serpent().map(|c @ (x, y)| unsafe { 
         let p = image.pixel(x, y);
@@ -11,9 +18,9 @@ pub fn sierra<'p, const FAC: u8, const N: usize>(
         *image.pixel_mut(x, y) = new;
         let error = p.asub(new);
         let f = |f| {
-            move |x: [f32; N]| {
-                x.aadd(error.amul([(f as f32 / 32.) * const { FAC as f32 * (1.0 / 255.) }; N]))
-            }
+            move |x: [f32; N]| { lower::algebraic::math! {
+                x.zip(error).map(|(x, error)| error * (f  as f32 / 32.) * fac + x)
+            } }
         };
         /*  * 5 3
         2 4 5 4 2

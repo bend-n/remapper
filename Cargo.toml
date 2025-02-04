@@ -12,8 +12,8 @@ fimg = { version = "0.4.43", git = "https://github.com/bend-n/fimg", default-fea
     "scale",
 ] }
 hinted = "0.0.2"
-lower = "0.1.4"
-mattr = "0.0.3"
+lower = "0.2"
+mattr = "1"
 rand = "0.8.5"
 
 

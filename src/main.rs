@@ -1,5 +1,7 @@
-#![feature(slice_as_chunks, generic_arg_infer, iter_chain)]
+#![allow(incomplete_features)]
+#![feature(slice_as_chunks, generic_arg_infer, iter_chain, generic_const_exprs)]
 use fimg::{DynImage, Image};
+use remapper::pal;
 use std::time::Instant;
 
 fn main() {
@@ -38,8 +40,8 @@ fn reemap() {
     //     [0.75, 0.75, 0.75, 1.],
     //     [1.; 4],
     // ][..];
-    // let pal = &[[0.], [1.]][..];
-    // let pal = &[[0.], [0.25], [0.5], [0.75], [1.]][..];
+    // let pal = vec![[0.0f32], [1.]];
+    let pal = &[[0.], [0.25], [0.5], [0.75], [1.]][..];
     // let pal = &[0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.0].map(|x| [x])[..];
 
     /*let pal = [
@@ -49,7 +51,7 @@ fn reemap() {
     */
     // println!("{pal:?}");
     // dbg!(pal.space());
-    let i = DynImage::open("../fimg/tdata/cat.png").to_rgba();
+    let i = DynImage::open("../fimg/tdata/cat.png").to_y();
     // let pal = [[0.], [1.]];
     // let mut pal = exoquant::generate_palette(
     //     &i.chunked()
@@ -85,10 +87,10 @@ fn reemap() {
     //     .to_u8()
     //     .save("gamma/2_4.png");
     let now = Instant::now();
-    let x = remapper::diffusion::sierra::sierra::<255, 4>(
+    let x = remapper::ordered::triangular::<1>(
         // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
         i,
-        pal.into(),
+        pal::new(&pal),
     )
     .to()
     .to_u8();

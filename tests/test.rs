@@ -1,3 +1,5 @@
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
 use fimg::{indexed::IndexedImage, Image};
 use remapper::pal;
 
@@ -10,7 +12,7 @@ fn test(
     // let d = f(fimg::Image::open("tdata/small_cat.png").to_f32().as_ref(), &pal).to().to_u8().show();
     let d = f(
         fimg::Image::open("tdata/small_cat.png").to_f32().as_ref(),
-        pal.into(),
+        pal::new(pal),
     )
     .into_raw_parts()
     .0
@@ -27,7 +29,7 @@ macro_rules! test {
     ($x:ident, $call:path) => {
         #[test]
         fn $x() {
-            test(stringify!($x), $call);
+            test(stringify!($x), |x, p| $call(x, p));
         }
     };
     (boxed $x:ident, $call:path) => {
