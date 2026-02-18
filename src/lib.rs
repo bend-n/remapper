@@ -2,19 +2,14 @@
 #![feature(
     custom_inner_attributes,
     proc_macro_hygiene,
-    vec_into_raw_parts,
     type_alias_impl_trait,
-    inline_const_pat,
-    iter_chain,
     adt_const_params,
     stmt_expr_attributes,
     iter_array_chunks,
-    let_chains,
     generic_const_exprs,
     core_intrinsics,
     iter_intersperse,
     maybe_uninit_array_assume_init,
-    array_windows,
     iter_map_windows
 )]
 #![allow(non_camel_case_types)]
@@ -54,7 +49,7 @@ use std::ops::Deref;
 
 use atools::prelude::*;
 use dumb::Closest;
-use fimg::{indexed::IndexedImage, Image};
+use fimg::{Image, indexed::IndexedImage};
 
 fn dither<'a, const C: usize>(
     image: Image<impl AsRef<[f32]>, C>,

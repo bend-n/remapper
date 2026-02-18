@@ -1,13 +1,13 @@
 [package]
 name = "remapper"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 atools = "0.1.5"
 car = "0.1.1"
 exoquant = "0.2.0"
-fimg = { version = "0.4.43", git = "https://github.com/bend-n/fimg", default-features = false, features = [
+fimg = { version = "0.4.52", default-features = false, features = [
     "save",
     "scale",
 ] }

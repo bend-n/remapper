@@ -1,5 +1,5 @@
 use super::*;
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn seeerad<'p>(x: Image<Box<[f32]>, 1>, palette: pal<'p, 1>) -> out<'p, pal<'p, 1>>{
     sierra::<255,1>(x, palette)
 }
@@ -13,7 +13,7 @@ pub fn sierra<'p, const FAC: u8, const N: usize>(
     let fac = const { FAC as f32 / 255.0 };
     #[rustfmt::skip]
     let i = image.serpent().map(|c @ (x, y)| unsafe { 
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, i) = palette.closest(p);
         *image.pixel_mut(x, y) = new;
         let error = p.asub(new);
@@ -49,7 +49,7 @@ pub fn sierra_two<'p, const FAC: u8, const N: usize>(
     let out = out::build(image.width(), image.height()).pal(palette);
     #[rustfmt::skip]
     let i = image.serpent().map(|c@(x, y)| unsafe {
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, i) = palette.closest(p);
         *image.pixel_mut(x, y) = new;
         let error = p.asub(new);
@@ -80,7 +80,7 @@ pub fn sierra_lite<'p, const FAC: u8, const N: usize>(
     let out = out::build(image.width(), image.height()).pal(palette);
     #[rustfmt::skip]
     let i = image.serpent().map(|c@(x, y)| unsafe {
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, i) = palette.closest(p);
         *image.pixel_mut(x, y) = new;
         let error = p.asub(new);

@@ -198,7 +198,7 @@ where
     dither_with::<1024, C>(
         image,
         |((x, y), p)| unsafe {
-            let [noise] = BLUE.pixel(x as u32, y as u32);
+            let &[noise] = BLUE.pixel(x as u32, y as u32);
             palette.nearest(p.map(|x| triangle(x, noise))) as u32
         },
         palette,

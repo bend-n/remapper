@@ -1,5 +1,5 @@
 #![allow(incomplete_features)]
-#![feature(slice_as_chunks, generic_arg_infer, iter_chain, generic_const_exprs)]
+#![feature(generic_const_exprs)]
 use fimg::{DynImage, Image};
 use remapper::pal;
 use std::time::Instant;
@@ -87,7 +87,7 @@ fn reemap() {
     //     .to_u8()
     //     .save("gamma/2_4.png");
     let now = Instant::now();
-    let x = remapper::ordered::triangular::<1>(
+    let x = remapper::ordered::blue::<1>(
         // fimg::Image::<&[u8], 4>::make::<256, 256>().as_ref(),
         i,
         pal::new(&pal),

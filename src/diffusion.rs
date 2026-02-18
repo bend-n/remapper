@@ -17,7 +17,7 @@ pub fn atkinson<'a, const N: usize>(
         1 1 1
           1
         */
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, index) = palette.closest(p);
         *image.pixel_mut(x, y) = new;
         let error = p.asub(new);
@@ -42,9 +42,9 @@ pub fn jarvis<'a, const N: usize, const FAC: u8>(
     let out = out::build(image.width() as _, image.height() as _).pal(palette);
     #[rustfmt::skip]
     let i = image.serpent().map(|(x, y)| unsafe {
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, r) = palette.closest(p);
-        *image.pixel_mut(x, y) = new;
+        *image.pixel_mut(x, y) = new; 
         
         let error = p.asub(new);
         let f = |f| {
@@ -80,7 +80,7 @@ pub fn floyd_steinberg<'p, const FAC: u8, const N: usize>(
 ) -> out<'p, pal<'p, N>> {
     let out = out::build(image.width() as _, image.height() as _).pal(palette);
     let i = image.serpent().map(|(x, y)| unsafe {
-        let p = image.pixel(x, y);
+        let &p = image.pixel(x, y);
         let (_, new, i) = palette.closest(p);
         let error = p.asub(new);
         let f = |f| {
