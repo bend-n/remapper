@@ -5,8 +5,7 @@ use fimg::indexed::IndexedImage;
 use super::*;
 
 const fn threshold<const N: usize>(x: [u32; N]) -> [f32; N] {
-    car::map!(x, |x| x as f32 * (1. / N as f32)
-        - 0.5 * ((N - 1) as f32 * (1. / N as f32)))
+    x.map(const |x| x as f32 * (1. / N as f32) - 0.5 * ((N - 1) as f32 * (1. / N as f32)))
 }
 
 const fn next<const N: usize>(input: [u32; N]) -> [u32; N.isqrt() * 2 * N.isqrt() * 2]

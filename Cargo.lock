@@ -81,8 +81,9 @@ checksum = "6a02dba6a60cd31533cf16561ced53239686d18f1464bff49579dd320fcea081"
 
 [[package]]
 name = "fimg"
-version = "0.4.52"
-source = "git+https://git.bendn.org/fimg#6db604c71c7e278c9d8c285510678dd46c49c4ab"
+version = "0.4.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d086d8ccfa70269fc0e33affce0bc1ddec2063350fd22ad1717f66baa0d4d38"
 dependencies = [
  "array_chunks",
  "atools",
@@ -254,7 +255,6 @@ name = "remapper"
 version = "0.1.0"
 dependencies = [
  "atools",
- "car",
  "exoquant",
  "fimg",
  "hinted 0.0.2",

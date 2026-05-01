@@ -2,15 +2,12 @@
 #![feature(
     custom_inner_attributes,
     proc_macro_hygiene,
-    type_alias_impl_trait,
     adt_const_params,
-    stmt_expr_attributes,
-    iter_array_chunks,
     generic_const_exprs,
     core_intrinsics,
-    iter_intersperse,
-    maybe_uninit_array_assume_init,
-    iter_map_windows
+    const_closures,
+    const_array,
+    const_trait_impl
 )]
 #![allow(non_camel_case_types)]
 #[derive(Copy, Clone)]
@@ -48,10 +45,10 @@ pub mod dumb;
 use std::ops::Deref;
 
 use atools::prelude::*;
-use dumb::Closest;
+pub use dumb::Closest;
 use fimg::{Image, indexed::IndexedImage};
 
-fn dither<'a, const C: usize>(
+pub fn dither<'a, const C: usize>(
     image: Image<impl AsRef<[f32]>, C>,
     f: impl FnMut(((usize, usize), &[f32; C])) -> u32,
     pal: pal<'a, C>,
